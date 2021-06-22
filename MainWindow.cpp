@@ -4,6 +4,9 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QCameraViewfinder>
+#include <QVBoxLayout>
+
+#include <QAudioDeviceInfo>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,39 +14,47 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    InitUi();
+
     InitTimer();
+
+    InitAudioDevice();
+}
+
+void MainWindow::InitUi()
+{
+    QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
+
+    disconnect(ui->comboBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(on_comboBox_currentIndexChanged(QString)));
+    ui->comboBox->clear();
+    for(int i = 0; i < cameras.count(); ++i)
+        ui->comboBox->addItem(cameras.at(i).description());
+    connect(ui->comboBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(on_comboBox_currentIndexChanged(QString)));
 }
 
 void MainWindow::InitTimer()
 {
     QTimer *tmr = new QTimer();
-    connect(tmr, SIGNAL(timeout()), this, SLOT(InitUIAndMainCamera()));
+    connect(tmr, SIGNAL(timeout()), this, SLOT(InitMainCamera()));
     connect(tmr, SIGNAL(timeout()), tmr, SLOT(stop()));
     tmr->start(1000);
 }
 
-void MainWindow::InitUIAndMainCamera()
+void MainWindow::InitMainCamera()
 {
-    QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
-
-    ui->comboBox->clear();
-    QStringList itemsNames;
-    for(int i = 0; i < cameras.count(); ++i)
-    {
-        itemsNames.append(cameras.at(i).description());
-    }
-
-    scene = new QGraphicsScene(ui->graphicsView->geometry().x(), ui->graphicsView->geometry().y(),
-                               ui->graphicsView->geometry().width() - 10, ui->graphicsView->geometry().height() - 10);
     viewfinder = new QVideoWidget();
-    ui->graphicsView->setScene(scene);
-    scene->addWidget(viewfinder);
-    ui->graphicsView->show();
-
-    camera = new QCamera(cameras.at(0));
-
+    camera = new QCamera(QCameraInfo::defaultCamera());
+    QVBoxLayout *lay = new QVBoxLayout(ui->widget);
+    lay->addWidget(viewfinder);
     camera->setViewfinder(viewfinder);
     camera->start();
+}
+
+void MainWindow::InitAudioDevice()
+{
+    QList<QAudioDeviceInfo> microphones = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+    for(int i = 0; i < microphones.count(); ++i)
+        ui->audioComboBox->addItem(microphones.at(i).deviceName());
 }
 
 MainWindow::~MainWindow()
@@ -61,7 +72,6 @@ void MainWindow::on_comboBox_currentIndexChanged(const QString &arg1)
             camera->stop();
             delete camera;
             camera = new QCamera(cameras.at(i));
-            camera->setCaptureMode(QCamera::CaptureVideo);
             camera->setViewfinder(viewfinder);
             camera->start();
         }

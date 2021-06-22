@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include <QVideoWidget>
-#include <QGraphicsView>
 #include <QCameraInfo>
 
 QT_BEGIN_NAMESPACE
@@ -23,12 +22,15 @@ public:
 private slots:
     void on_comboBox_currentIndexChanged(const QString &arg1);
 
-    void InitUIAndMainCamera();
+    void InitMainCamera();
+
+    void InitUi();
+
+    void InitAudioDevice();
 
 private:
     Ui::MainWindow *ui;
 
-    QGraphicsScene *scene;
     QVideoWidget *viewfinder;
     QCamera *camera;
 };
